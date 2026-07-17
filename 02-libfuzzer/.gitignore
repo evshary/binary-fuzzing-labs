@@ -1,0 +1,12 @@
+# Build output
+/fuzzer
+
+# Generated corpus and crash artifacts
+/corpus/
+/artifacts/
+
+# Sanitizer and profiling output
+/asan.log*
+/ubsan.log*
+/*.profraw
+/*.profdata
