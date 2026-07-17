@@ -1,0 +1,15 @@
+# Build outputs
+/target
+/target-sanitized
+
+# AFL++ outputs
+/input/
+/out/
+/out-sanitized/
+/.cur_input
+
+# Crash and sanitizer output
+/core
+/core.*
+/asan.log*
+/ubsan.log*
