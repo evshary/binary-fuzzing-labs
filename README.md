@@ -14,3 +14,5 @@ coverage-guided fuzzing.
 
 Each lab is self-contained. Enter its directory and follow its README to build
 and run the exercises.
+
+Run `make clean` from this directory to remove generated files from every lab.
