@@ -1,0 +1,78 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  labs:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install toolchains
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes \
+            afl++ \
+            binutils \
+            build-essential \
+            clang \
+            file \
+            gcc-aarch64-linux-gnu \
+            llvm \
+            qemu-user
+
+      - name: Test Lab 00 - binary analysis
+        working-directory: 00-binary-analysis
+        run: |
+          make build
+          ./target BINARY | grep 'Matched level: 3'
+          file target | grep 'ELF 64-bit'
+          readelf -h target | grep 'X86-64'
+          nm target | grep check_word
+
+      - name: Test Lab 01 - ARM64 with QEMU
+        working-directory: 01-arm-qemu
+        run: |
+          make build
+          file hello-arm64 | grep 'ARM aarch64'
+          qemu-aarch64 ./hello-arm64 learner | grep 'Hello, learner, from ARM64!'
+
+      - name: Test Lab 02 - libFuzzer
+        working-directory: 02-libfuzzer
+        run: |
+          make build
+          mkdir -p corpus artifacts
+          ./fuzzer corpus -runs=20
+          printf 'LIBFUZZ' > artifacts/crash-ci
+          make reproduce
+
+      - name: Test Lab 03 - AFL++
+        working-directory: 03-source-instrumentation
+        env:
+          AFL_I_DONT_CARE_ABOUT_MISSING_CRASHES: "1"
+          AFL_SKIP_CPUFREQ: "1"
+        run: |
+          make build
+          make reproduce
+          make build-sanitized
+          mkdir -p input
+          printf 'A' > input/start
+          afl-fuzz -V 1 -i input -o out -- ./target @@
+
+      - name: Clean all labs
+        run: |
+          make clean
+          test -z "$(find . -type f \( \
+            -name target -o \
+            -name target-sanitized -o \
+            -name hello-arm64 -o \
+            -name fuzzer \
+          \) -print -quit)"
